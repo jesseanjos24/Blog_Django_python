@@ -11,3 +11,25 @@ def index(request):
         request,
         'blog/pages/index.html',
     )
+
+
+def page(request):
+    
+    # context = (
+    #     ...
+    # )
+    return render(
+        request,
+        'blog/pages/page.html',
+    )
+    
+
+def post(request):
+    
+    # context = (
+    #     ...
+    # )
+    return render(
+        request,
+        'blog/pages/post.html',
+    )

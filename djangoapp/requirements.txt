@@ -3,3 +3,4 @@ Django>=6.0.1, < 6.2
 sqlparse==0.5.5
 tzdata==2025.3
 psycopg2-binary>=2.9.11, < 2.10
+pillow>=12.1.1
