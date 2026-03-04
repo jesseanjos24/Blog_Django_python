@@ -1,7 +1,38 @@
 from django.db import models
+from django.contrib.auth.models import User
 from utils.blog_ultils import new_slugfy
+from utils.image import resize_image
+from django_summernote.models import AbstractAttachment
+from django.urls import reverse
 
 # Create your models here.
+
+class PostManager(models.Manager):
+    
+    def get_published(self):
+        return self.filter(is_published=True).order_by('-pk')
+
+# Create your models here.
+
+class PostAttachment(AbstractAttachment):
+    def save(self, *args, **kwargs):
+        if not self.name:
+            self.name = self.file.name
+        
+        current_file_name = str(self.file.name)
+        super_save = super().save(*args, **kwargs)
+        
+        file_changed = False
+        
+        if self.file:
+            file_changed = current_file_name != self.file.name
+            
+        if file_changed:
+            
+            resize_image(self.file, 900, True, 70)
+
+        return super_save
+
 class Tag(models.Model):
     
     class Meta:
@@ -25,7 +56,7 @@ class Tag(models.Model):
         return super().save(*args, **kwargs)
     
     def __str__(self) -> str:
-        return super().__str__()
+        return self.name
     
 
 class Category(models.Model):
@@ -51,32 +82,149 @@ class Category(models.Model):
         return super().save(*args, **kwargs)
     
     def __str__(self) -> str:
-        return super().__str__()
+        return self.name
     
     
 class Page(models.Model):
-    
+
     class Meta:
-        verbose_name = 'Page'
-        verbose_name_plural = 'Pages'
-    
-    title = models.CharField(max_length=75)
+        verbose_name = "Page"
+        verbose_name_plural = "Pages"
+        ordering = ["-id"]
+        
+    objects = PostManager()
+
+    title = models.CharField(
+        max_length=75,
+        verbose_name="Title"
+    )
+
     slug = models.SlugField(
+        max_length=255,
         unique=True,
         default=None,
         null=True,
         blank=True,
-        max_length=255
+        verbose_name="Slug",
+    )
+
+    is_published = models.BooleanField(
+        default=False,
+        help_text= 'Marque aqui para deixar Publico',
+        verbose_name="Published",
+    )
+
+    content = models.TextField(
+        verbose_name="Content"
     )
     
-    is_published = models.BooleanField(default=False)
-    content = models.TextField()
-    
+    def get_absolute_url(self):
+        if not self.is_published:
+            return reverse('blog:index')
+        
+        return reverse('blog:page', args=(self.slug,))
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = new_slugfy(self.title)
-        return super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+class Post(models.Model):
+
+    class Meta:
+        verbose_name = "Post"
+        verbose_name_plural = "Posts"
+        ordering = ["-id"]
+        
+    objects = PostManager()
+
+    title = models.CharField(
+        max_length=65,
+        verbose_name="Title"
+    )
+
+    slug = models.SlugField(
+        max_length=255,
+        unique=True,
+        default=None,
+        null=True,
+        blank=True,
+        verbose_name="Slug",
+    )
     
-    def __str__(self) -> str:
-        return super().__str__()
+    excerpt = models.CharField(max_length=255)
+
+    is_published = models.BooleanField(
+        default=False,
+        help_text= 'Marque aqui para deixar Publico',
+        verbose_name="Published",
+    )
+
+    content = models.TextField(
+        verbose_name="Content"
+    )
     
+    cover = models.ImageField(upload_to='posts/%Y/%m', blank=True, default='')
+    
+    cover_in_post_content = models.BooleanField(
+        default=True,
+        help_text='Se Marcado, Exibira a capa dentro do post.'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True, null=True,
+        related_name='post_created_by'
+    )
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True, null=True,
+        related_name='post_updated_by'
+    )
+    
+    category = models.ForeignKey(
+        Category, on_delete=models.SET_NULL,
+        null=True, blank=True, default=None,
+    )
+    
+    tags = models.ManyToManyField(Tag, blank=True, default='')
+    
+    def get_absolute_url(self):
+        if not self.is_published:
+            return reverse('blog:index')
+        
+        return reverse('blog:post', args=(self.slug,))
+    
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = new_slugfy(self.title)
+        
+        current_cover_name = str(self.cover.name)
+        super_save = super().save(*args, **kwargs)
+        
+        cover_changed = False
+        
+        if self.cover:
+            cover_changed = current_cover_name != self.cover.name
+            
+        if cover_changed:
+            
+            resize_image(self.cover, 900, True, 70)
+
+        return super_save
+        
+        
+        
+    def __str__(self):
+        return self.title
+
+       
