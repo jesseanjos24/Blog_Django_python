@@ -13,11 +13,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR.parent / 'data' / 'web'
 
+load_dotenv(BASE_DIR.parent / 'dotenv_files' / '.env', override=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
     'blog',
     'site_setup',
     'django_summernote',
+    'axes',
 ]
 
 MIDDLEWARE = [
@@ -57,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -114,6 +118,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTHENTICATION_BACKENDS = [
+    # AxesStandaloneBackend should be the first backend in the AUTHENTICATION_BACKENDS list.
+    'axes.backends.AxesStandaloneBackend',
+
+    # Django ModelBackend is the default authentication backend.
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 SUMMERNOTE_CONFIG = {
     'summernote': {
         # Toolbar customization
@@ -162,3 +174,17 @@ STATIC_ROOT = DATA_DIR / 'static'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = DATA_DIR / 'media'
 
+# Ativa o sistema de bloqueio de tentativas de login
+AXES_ENABLED = True
+
+# Número máximo de tentativas de login erradas permitidas
+# Após 3 falhas, o usuário/IP será bloqueado
+AXES_FAILURE_LIMIT = 3
+
+# Tempo (em horas) que o bloqueio vai durar
+# Aqui: 1 hora até liberar novas tentativas
+AXES_COOLOFF_TIME = 1
+
+# Se o usuário acertar a senha antes de atingir o limite,
+# o contador de tentativas falhas é zerado
+AXES_RESET_ON_SUCCESS = True

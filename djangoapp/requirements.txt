@@ -5,3 +5,6 @@ tzdata==2025.3
 psycopg2-binary>=2.9.11, < 2.10
 pillow>=12.1.1
 django-summernote==0.8.20.0
+bleach==6.3.0
+django-axes>=8.3.1, < 8.3
+python-dotenv>=1.2.2, < 1.2
